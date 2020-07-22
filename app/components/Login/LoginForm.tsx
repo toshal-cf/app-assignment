@@ -68,7 +68,7 @@ const LoginForm : FunctionComponent<any> = (props: any) => {
             let i:number;
             let flag: boolean = false;
             for(i = 0; i < users.length; i++) {
-                if(username == users[i].username && password == 'admin@123'){
+                if((username == users[i].username || username == users[i].email) && password == 'admin@123'){
                     appContext ? appContext.setComponent(2):null
                     flag = true;
                     appContext ? appContext.setUserId(users[i].id):null
