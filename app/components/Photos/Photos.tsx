@@ -1,9 +1,9 @@
 import React, {FunctionComponent, useContext, useEffect, useState} from 'react'
 import {StyleSheet, View, Text, TouchableOpacity, GestureResponderEvent, ViewStyle, SafeAreaView, FlatList} from "react-native";
-//import {ListItem} from "react-native-elements";
-import  axios from 'axios'
 import {ListItem, Header, Overlay, Image, Icon} from "react-native-elements";
-import {ComponentContext} from "../../App";
+import {connect} from "react-redux";
+
+import {displayAlbums, displayLogin, fetchPhotos, setPhotoId} from "../../redux";
 
 interface Photo {
     albumId: number,
@@ -19,41 +19,17 @@ interface ItemProps{
 }
 
 const Photos : FunctionComponent<any> = (props: any) => {
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState('')
-    const [data, setData] = useState< Array<Photo>|[]>([])
-    const appContext = useContext(ComponentContext)
 
-    useEffect(() => {
-            console.log("In useeffect")
-            axios.get(
-                'https://jsonplaceholder.typicode.com/albums/'+ (appContext? appContext?.albumId.toString(): '1')
-                    +'/Photos',
-                { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json; charset=UTF-8', }})
-                .then(response => {
-                    console.log(response)
-                    setLoading(false)
-                    setData(response.data)
-                    setError('')
-                })
-                .catch(error => {
-                    console.log("Request UnSuccessful")
-                    setLoading(false)
-                    setData([])
-                    setError('Something went wrong')
-                    console.log(error)
-                })
-            console.log("useffect ended")
-        },
+    useEffect(props.fetchPhotos,
         []
     )
 
     const handleArrowBack = () => {
-        appContext ? appContext.setComponent(2) : null
+        props.displayAlbums()
     }
 
     const handleLogOut = () => {
-        appContext ? appContext.setComponent(1) : null
+        props.displayLogin()
     }
 
 
@@ -100,10 +76,10 @@ const Photos : FunctionComponent<any> = (props: any) => {
                 rightComponent={<Icon name='log-out-outline' type='ionicon' color='white' onPress={handleLogOut}/>}
             />
 
-            {loading ?
+            {props.photoData.loading ?
                 <Text style={styles.formContainer}> Loading </Text> :
                 <FlatList
-                    data={data}
+                    data={props.photoData.photos}
                     renderItem={renderItem}
                     keyExtractor={item => item.id.toString()}
                 />
@@ -122,7 +98,7 @@ const Photos : FunctionComponent<any> = (props: any) => {
                 </Overlay>
             }
 
-            {error? <Text> {error} </Text>: null}
+            {props.photoData.error? <Text> {props.photoData.error} </Text>: null}
         </SafeAreaView>
     );
 }
@@ -161,4 +137,19 @@ const styles = StyleSheet.create({
     }
 })
 
-export default Photos;
+const mapStateToProps = (state: any) => {
+    return {
+        photoData: state.photo
+    }
+}
+
+const mapDispatchToProps = (dispatch: any) => {
+    return {
+        fetchPhotos: () => dispatch(fetchPhotos()),
+        displayLogin: () => dispatch(displayLogin()),
+        displayAlbums: () => dispatch(displayAlbums()),
+        setPhotoId: (id: number) => dispatch(setPhotoId())
+    }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(Photos);

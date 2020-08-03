@@ -8,12 +8,11 @@ import {
     ViewStyle,
     SafeAreaView,
     FlatList,
-    ScrollView
 } from "react-native";
-//import {ListItem} from "react-native-elements";
-import  axios from 'axios'
 import {ListItem, Header, Icon} from "react-native-elements";
-import {ComponentContext} from "../../App";
+import {connect} from "react-redux";
+
+import {displayLogin, displayPhotos, fetchAlbums, setAlbumId} from "../../redux";
 
 interface Album {
     "userId": number,
@@ -27,47 +26,20 @@ interface ItemProps{
 }
 
 const Albums : FunctionComponent<any> = (props: any) => {
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState('')
-    const [data, setData] = useState< Array<Album>|[]>([])
 
-    const appContext = useContext(ComponentContext)
-
-    useEffect(() => {
-            console.log("In useeffect")
-            axios.get(
-                'https://jsonplaceholder.typicode.com/users/'+ (appContext ? appContext.userId.toString():'1')
-                    + '/albums',
-                { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json; charset=UTF-8', }})
-            .then(response => {
-                console.log(response)
-                setLoading(false)
-                setData(response.data)
-                setError('')
-            })
-            .catch(error => {
-                console.log("Request UnSuccessful")
-                setLoading(false)
-                setData([])
-                setError('Something went wrong')
-                console.log(error)
-            })
-            console.log("useffect ended")
-        },
+    useEffect(props.fetchAlbums,
         []
     )
 
-    const [selectedId, setSelectedId] = useState<number | null>(null)
 
 
     const displayAlbum = (item: Album) => {
-        setSelectedId(item.id)
-        appContext ? appContext.setComponent(3) : null
-        appContext ? appContext.setAlbumId(item.id) : null
+        props.displayPhotos()
+        props.setAlbumId(item.id)
     }
 
     const handleArrowBack = () => {
-        appContext ? appContext.setComponent(1) : null
+        props.displayLogin()
     }
 
     const Item = (props : ItemProps) : JSX.Element => (
@@ -105,16 +77,16 @@ const Albums : FunctionComponent<any> = (props: any) => {
                 //leftContainerStyle={styles.headerCenterStyle}
             />
 
-            {loading ?
+            {props.albumsData.loading ?
                 <Text style={styles.formContainer}> Loading </Text> :
                 <FlatList
-                    data={data}
+                    data={props.albumsData.albums}
                     renderItem={renderItem}
                     keyExtractor={item => item.id.toString()}
                 />
             }
 
-            {error? <Text> {error} </Text>: null}
+            {props.albumsData.error? <Text> {props.albumsData.error} </Text>: null}
         </SafeAreaView>
     );
 }
@@ -153,4 +125,19 @@ const styles = StyleSheet.create({
     }
 })
 
-export default Albums;
+const mapStateToProps = (state: any) => {
+    return {
+        albumsData: state.album
+    }
+}
+
+const mapDispatchToProps = (dispatch: any) => {
+    return {
+        fetchAlbums: () => dispatch(fetchAlbums()),
+        setAlbumId: (id: number) => dispatch(setAlbumId(id)),
+        displayPhotos: () => dispatch(displayPhotos()),
+        displayLogin: () => dispatch(displayLogin()),
+    }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(Albums);

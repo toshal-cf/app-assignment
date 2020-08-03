@@ -1,7 +1,8 @@
 import React, {FunctionComponent, useState, useRef, useEffect, useContext} from 'react'
 import {StyleSheet, View, Text, TextInput, Button, TouchableOpacity, TouchableWithoutFeedback, Alert} from "react-native";
-import axios from "axios";
-import {ComponentContext} from "../../App";
+import {connect} from "react-redux";
+import {displayAlbums, fetchUsers, fetchUsersFailure, setUserId} from "../../redux";
+
 
 interface Company {
     name: string
@@ -31,61 +32,38 @@ interface User {
     company: Company
 }
 
-const LoginForm : FunctionComponent<any> = (props: any) => {
-    const [users, setUsers] = useState<Array<User> | []>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState('')
-
+const LoginForm : FunctionComponent<any> = ({userData, fetchUsers, setUserId, displayAlbums, fetchUsersFailure}) => {
 
     useEffect(() => {
-            axios.get('https://jsonplaceholder.typicode.com/users',
-                { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json; charset=UTF-8', }})
-                .then(response => {
-                    console.log(response)
-                    setLoading(false)
-                    setUsers(response.data)
-                    setError('')
-                })
-                .catch(error => {
-                    console.log("Request UnSuccessful")
-                    setLoading(false)
-                    setUsers([])
-                    setError('Something went wrong while fetching users.')
-                    console.log(error)
-                })
+            fetchUsers()
         },
         []
     )
 
-
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
-    const appContext = useContext(ComponentContext)
 
     const loginHandler = () => {
-        if(loading == false)
+        if(userData.loading == false)
         {
             let i:number;
             let flag: boolean = false;
-            for(i = 0; i < users.length; i++) {
-                if((username == users[i].username || username == users[i].email) && password == 'admin@123'){
-                    appContext ? appContext.setComponent(2):null
+            for(i = 0; i < userData.users.length; i++) {
+                if((username == userData.users[i].username || username == userData.users[i].email) &&
+                    password == 'admin@123'){
+                    displayAlbums()
                     flag = true;
-                    appContext ? appContext.setUserId(users[i].id):null
+                    setUserId(userData.users[i].id)
                 }
             }
             if(flag == false)
-                setError('Invalid username or password.')
+                fetchUsersFailure('Invalid username or password.')
         }
         else
         {
-            setError('Something went wrong. Please try again.')
+            fetchUsersFailure('Something went wrong. Please try again.')
         }
     }
-
-    /*const registerHandler = () => {
-        Alert.alert("Registration successful")
-    }*/
 
     const passwordInput = useRef<TextInput>(null)
 
@@ -114,13 +92,13 @@ const LoginForm : FunctionComponent<any> = (props: any) => {
             />
 
 
-            <TouchableWithoutFeedback        onPress={loginHandler}>
+            <TouchableWithoutFeedback onPress={loginHandler}>
                 <View style={styles.button}>
                     <Text style={styles.buttonText}> Login </Text>
                 </View>
             </TouchableWithoutFeedback>
 
-            {error? <Text style={styles.error}> {error} </Text> : null}
+            {userData.error? <Text style={styles.error}> {userData.error} </Text> : null}
 
             {/*<TouchableWithoutFeedback onPress={registerHandler} style={styles.button}>
                     <View style={styles.button}>
@@ -165,4 +143,20 @@ const styles = StyleSheet.create({
     }
 })
 
-export default LoginForm;
+const mapStateToProps = (state: any) => {
+    return {
+        userData: state.user
+    }
+}
+
+const mapDispatchToProps = (dispatch:any) => {
+    return {
+        fetchUsers: () => dispatch(fetchUsers()),
+        setUserId: (id:number) => dispatch(setUserId(id)),
+        displayAlbums: () => dispatch(displayAlbums()),
+        fetchUsersFailure: (error: string) => dispatch(fetchUsersFailure(error))
+    }
+}
+
+
+export default connect(mapStateToProps, mapDispatchToProps)(LoginForm);
